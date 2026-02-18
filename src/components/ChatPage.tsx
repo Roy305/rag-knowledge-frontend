@@ -35,15 +35,17 @@ export default function ChatPage() {
 
   // 認証チェックとトークン取得
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      router.push('/');
-      return;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
     }
   }, [router]);
 
   // デモモード検出
-  const isDemoMode = localStorage.getItem('auth_token') === 'demo-token';
+  const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('auth_token') === 'demo-token';
 
   // 通知表示
   useEffect(() => {
@@ -81,7 +83,7 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const token = localStorage.getItem('auth_token');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (!token) {
       router.push('/');
       return;
@@ -138,7 +140,9 @@ export default function ChatPage() {
         setMessages(prev => [...prev, assistantMessage]);
       } else if (response.status === 401) {
         // トークンが無効な場合はログイン画面にリダイレクト
-        localStorage.removeItem('auth_token');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+        }
         router.push('/');
       } else {
         const errorData = await response.json();
@@ -164,7 +168,9 @@ export default function ChatPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token');
+    }
     router.push('/');
   };
 

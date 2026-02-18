@@ -12,16 +12,20 @@ export default function LoginPage() {
 
   // すでにログインしている場合はチャット画面にリダイレクト
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      router.push('/chat');
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        router.push('/chat');
+      }
     }
   }, [router]);
 
   const handleDemoLogin = () => {
     // デモ用：簡単なログイン
-    localStorage.setItem('auth_token', 'demo-token');
-    router.push('/chat');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_token', 'demo-token');
+      router.push('/chat');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +47,9 @@ export default function LoginPage() {
       if (response.ok) {
         const data = await response.json();
         // JWTトークンをlocalStorageに保存
-        localStorage.setItem('auth_token', data.access_token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', data.access_token);
+        }
         router.push('/chat');
       } else {
         const errorData = await response.json();

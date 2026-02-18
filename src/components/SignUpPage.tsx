@@ -43,7 +43,9 @@ export default function SignUpPage() {
       if (response.ok) {
         const data = await response.json();
         // JWTトークンをlocalStorageに保存
-        localStorage.setItem('auth_token', data.access_token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', data.access_token);
+        }
         router.push('/chat');
       } else {
         const errorData = await response.json();
