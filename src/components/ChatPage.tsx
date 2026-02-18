@@ -83,6 +83,9 @@ export default function ChatPage() {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // デバッグ用：API URLを確認
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     if (!token) {
       router.push('/');

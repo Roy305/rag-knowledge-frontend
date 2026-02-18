@@ -32,6 +32,9 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     
+    // デバッグ用：API URLを確認
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+    
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',

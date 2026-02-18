@@ -15,6 +15,9 @@ export default function SignUpPage() {
     e.preventDefault();
     setIsLoading(true);
     
+    // デバッグ用：API URLを確認
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+    
     // パスワード確認
     if (password !== confirmPassword) {
       alert('パスワードが一致しません');
