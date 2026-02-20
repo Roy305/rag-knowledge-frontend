@@ -40,7 +40,8 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
     setIsUploading(true);
 
     try {
-      const token = localStorage.getItem('auth_token');
+      // SSR対応
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
       if (!token) {
         onUploadError('認証トークンがありません。再度ログインしてください。');
         return;
@@ -61,7 +62,10 @@ export default function FileUpload({ onUploadSuccess, onUploadError }: FileUploa
         const data = await response.json();
         onUploadSuccess(data.title || file.name);
       } else if (response.status === 401) {
-        localStorage.removeItem('auth_token');
+        // SSR対応
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+        }
         onUploadError('認証が切れました。再度ログインしてください。');
       } else {
         const errorData = await response.json();

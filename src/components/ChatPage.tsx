@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import API_URL from '@/config/api';
-import FileUpload from '@/components/FileUpload';
+import FileUpload from './FileUpload';
+import DocumentList from './DocumentList';
 
 interface Message {
   id: string;
@@ -19,19 +20,14 @@ interface Message {
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'こんにちは！私はRAG Knowledgeアシスタントです。どのようなことでもお尋ねください。',
-      sender: 'assistant',
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showUpload, setShowUpload] = useState(false);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showDocumentList, setShowDocumentList] = useState(false);
   const router = useRouter();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 認証チェックとトークン取得
   useEffect(() => {
@@ -180,19 +176,32 @@ export default function ChatPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* ヘッダー */}
-      <header className="bg-accent/50 backdrop-blur-sm border-b border-border px-6 py-4">
+      <header className="bg-accent/50 border-b border-border p-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">RAG Knowledge</h1>
           <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-bold text-foreground">RAGチャット</h1>
             <button
-              onClick={() => setShowUpload(!showUpload)}
-              className="px-4 py-2 text-sm bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
+              onClick={() => setShowDocumentList(true)}
+              className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
-              📁 ファイル追加
+              📄 ファイル確認
+            </button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowUpload(true)}
+              className="px-3 py-1 text-sm bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90"
+            >
+              📁 アップロード
             </button>
             <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('auth_token');
+                }
+                router.push('/');
+              }}
+              className="px-3 py-1 text-sm bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90"
             >
               ログアウト
             </button>
@@ -209,6 +218,14 @@ export default function ChatPage() {
         } backdrop-blur-sm`}>
           <p className="text-sm font-medium">{notification.message}</p>
         </div>
+      )}
+
+      {/* ファイル一覧モーダル */}
+      {showDocumentList && (
+        <DocumentList
+          isOpen={showDocumentList}
+          onClose={() => setShowDocumentList(false)}
+        />
       )}
 
       {/* ファイルアップロードモーダル */}
@@ -240,44 +257,80 @@ export default function ChatPage() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} mb-6`}
               >
-                <div
-                  className={`max-w-[70%] px-4 py-3 rounded-2xl ${
-                    message.sender === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                      : 'bg-accent/50 text-foreground border border-border'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <p className={`text-xs mt-2 ${
-                    message.sender === 'user' ? 'text-blue-100' : 'text-muted-foreground'
-                  }`}>
-                    {message.timestamp.toLocaleTimeString('ja-JP')}
-                  </p>
-                  {/* ソース情報表示 */}
-                  {message.sender === 'assistant' && message.sources && (
-                    <div className="mt-3 pt-2 border-t border-border/50">
-                      <p className="text-xs text-muted-foreground mb-1">📄 参照資料:</p>
-                      <div className="space-y-1">
-                        {message.sources.map((source, index) => (
-                          <p key={index} className="text-xs text-accent-foreground hover:underline cursor-pointer" title={source.content}>
-                            • {source.title}
-                          </p>
-                        ))}
+                <div className="flex flex-col max-w-[75%]">
+                  <div
+                    className={`relative px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm ${
+                      message.sender === 'user'
+                        ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-blue-500/25'
+                        : 'bg-white/90 dark:bg-gray-800/90 text-foreground border border-gray-200/50 dark:border-gray-700/50 shadow-gray-500/10'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    {/* ソース情報表示 - 高級デザイン */}
+                    {message.sender === 'assistant' && message.sources && (
+                      <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-700/50">
+                        <div className="flex items-center mb-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
+                            📄 参照資料
+                          </span>
+                        </div>
+                        <div className="grid gap-2">
+                          {message.sources.map((source, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                              title={source.content}
+                            >
+                              <span className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 mr-2 flex-shrink-0"></span>
+                              <span className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                                {source.title}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  {/* 時間表示 - 高級デザイン */}
+                  <div className={`flex items-center mt-2 space-x-2 text-xs ${
+                    message.sender === 'user' ? 'justify-end' : 'justify-start'
+                  }`}>
+                    <span className={`${
+                      message.sender === 'user' 
+                        ? 'text-blue-600 dark:text-blue-400' 
+                        : 'text-gray-500 dark:text-gray-400'
+                    }`}>
+                      {message.timestamp.toLocaleTimeString('ja-JP', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                    <span className={`${
+                      message.sender === 'user' 
+                        ? 'text-blue-500 dark:text-blue-500/50' 
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}>
+                      {message.timestamp.toLocaleDateString('ja-JP', {
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-accent/50 text-foreground border border-border px-4 py-3 rounded-2xl">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-foreground rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="bg-white/90 dark:bg-gray-800/90 text-foreground border border-gray-200/50 dark:border-gray-700/50 px-5 py-4 rounded-2xl shadow-lg backdrop-blur-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">思考中...</span>
                   </div>
                 </div>
               </div>
